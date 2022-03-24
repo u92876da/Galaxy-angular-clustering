@@ -68,8 +68,7 @@ def angular_dist_to_euclidean_dist(D, r=1):
     return 2 * r * np.sin(0.5 * D * np.pi / 180.)
 
 
-def two_point(data, bins, method='standard',
-              data_R=None, random_state=None):
+def two_point(data, bins, method = "standard", data_R = None, random_state = None):
     """Two-point correlation function
 
     Parameters
@@ -165,9 +164,8 @@ def two_point(data, bins, method='standard',
 
 
 
-def bootstrap_two_point(data, bins, Nbootstrap=10,
-                        method='standard', return_bootstraps=False,
-                        random_state=None):
+def bootstrap_two_point(data, bins, Nbootstrap=10, method = 'standard',
+                        return_bootstraps = False, random_state = None):
     """Bootstrapped two-point correlation function
 
     Parameters
@@ -232,7 +230,7 @@ def bootstrap_two_point(data, bins, Nbootstrap=10,
 
 
 
-def two_point_angular(ra, dec, bins, geometry, method='standard', random_state=None):
+def two_point_angular(ra, dec, ra_R, dec_R, bins, geometry, method='standard', random_state=None):
     """Angular two-point correlation function
 
     A separate function is needed because angular distances are not
@@ -286,12 +284,12 @@ def two_point_angular(ra, dec, bins, geometry, method='standard', random_state=N
     bins_transform = angular_dist_to_euclidean_dist(bins)
 
     return two_point(data, bins_transform, method=method,
-                     data_R=data_R, random_state=rng)
+                     data_R = data_R, random_state=rng)
 
 
 
-def bootstrap_two_point_angular(ra, dec, bins, geometry, method='standard',
-                                Nbootstraps=10, random_state=None):
+def bootstrap_two_point_angular(ra, dec, bins, ra_rand = [], dec_rand = [], geometry = None,
+                                method = "standard", Nbootstraps = 10, random_state = None):
     """Angular two-point correlation function
 
     A separate function is needed because angular distances are not
@@ -348,10 +346,16 @@ def bootstrap_two_point_angular(ra, dec, bins, geometry, method='standard',
 
     for i in range(Nbootstraps):
         # time this
-        start_time_repeat = time.time() 
+        # start_time_repeat = time.time() 
         
-        # draw a random sample with N points
-        ra_R, dec_R = two_pt_angular_corr.create_random_gals(geometry, len(ra))
+        # draw a random sample with N points if galaxy positions not already given
+        if len(ra_rand) < 1000 * Nbootstraps and len(dec_rand) < 1000 * Nbootstraps:
+            ra_R, dec_R = two_pt_angular_corr.create_random_gals(geometry, len(ra))
+        # use the inputted random galaxy positions
+        elif len(ra_rand) > 1000 * Nbootstraps and len(dec_rand) > 1000 * Nbootstraps:
+            ra_R = ra_rand[int(i * len(ra_rand) / Nbootstraps) : int((i + 1) * len(ra_rand) / Nbootstraps)]
+            dec_R = dec_rand[int(i * len(dec_rand) / Nbootstraps) : int((i + 1) * len(dec_rand) / Nbootstraps)]
+            
         # ra_R, dec_R = uniform_sphere((min(ra), max(ra)),
         #                              (min(dec), max(dec)),
         #                              2 * len(ra))
@@ -371,19 +375,18 @@ def bootstrap_two_point_angular(ra, dec, bins, geometry, method='standard',
         else:
             data_b = data
 
-        bootstraps.append(two_point(data_b, bins_transform, method=method,
-                                    data_R=data_R, random_state=rng))
+        bootstraps.append(two_point(data_b, bins_transform, method = method,
+                                    data_R = data_R, random_state=rng))
         
-        end_time_repeat = time.time()
-        print("Bootstrap took {} seconds!".format(np.round(end_time_repeat - start_time_repeat, 2)))
-    
-        
-        
+        # end_time_repeat = time.time()
+        # print("Bootstrap {} took {} seconds!".format(i+1, np.round(end_time_repeat - start_time_repeat, 2)))
+     
+    print("Nrandom =", len(ra_R))
 
     bootstraps = np.asarray(bootstraps)
     corr = np.mean(bootstraps, 0)
     corr_err = np.std(bootstraps, 0, ddof=1)
 
-    return corr, corr_err, bootstraps, {"ra": ra_R, "dec": dec_R}
+    return corr, corr_err, bootstraps #{"ra": ra_R, "dec": dec_R}
 
 

@@ -21,7 +21,7 @@ import MCMC
 
 class galaxy_field:
     
-    def __init__(self, fieldname = "UDS", z = None, z_width = None, \
+    def __init__(self, fieldname = "Rachana UDS DR11", z = None, z_width = None, \
         min_stellar_mass = None, max_stellar_mass = None, w_theta_ACF_pkl = None, \
         N_z_bins = 10):
         
@@ -32,12 +32,12 @@ class galaxy_field:
         data["Mstar_z_p"] = data["Mstar_m62_z_p"] # solar metallicity Z = 0.02
         data = data[data["Best galaxies"] == True]
         self.data = data
+        print("data length =", len(self.data))
         
         if z != None and z_width != None:
             self.photo_z_cut(z, z_width)
             
-        if min_stellar_mass != None and max_stellar_mass != None:
-            self.stellar_mass_cut(min_stellar_mass, max_stellar_mass)
+        self.stellar_mass_cut(min_stellar_mass, max_stellar_mass)
         
         if w_theta_ACF_pkl != None:
             self.w_theta_ACF = two_pt_angular_auto_corr.from_pkl(w_theta_ACF_pkl)
@@ -144,8 +144,12 @@ class galaxy_field:
         pass
     
     def stellar_mass_cut(self, min_mass, max_mass):
-        self.data = self.data[self.data['Mstar_z_p'] >= 10 ** min_mass]
-        self.data = self.data[self.data['Mstar_z_p'] <= 10 ** max_mass]
+        if min_mass != None:
+            print("min_mass =", min_mass)
+            self.data = self.data[self.data['Mstar_z_p'] >= 10 ** min_mass]
+        if max_mass != None:
+            print("max_mass =", max_mass)
+            self.data = self.data[self.data['Mstar_z_p'] <= 10 ** max_mass]
     
     def plot_galaxies(self):
         data_gals = {"ra": self.data["ALPHA_J2000"], "dec": self.data["DELTA_J2000"]}
@@ -153,17 +157,17 @@ class galaxy_field:
         self.geometry.plot_field(data_gals, random_gals)
     
     # computationally expensive
-    def calc_w_theta_ACF(self, sample_type, method = "landy-szalay", min_bin = 1e-3, \
-                    max_bin = 2e-1, Nbins = 20, Nbootstraps = 100, Ngals = None, w_theta_method = "astroML"):
+    def calc_w_theta_ACF(self, method = "landy-szalay", min_bin = 1e-3, max_bin = 2e-1, Nbins = 20, 
+                         Nbootstraps = 100, Ngals = None, w_theta_method = "astroML"):
         
         self.w_theta_ACF = two_pt_angular_auto_corr.calc_two_pt_angular_corr(self.fieldname, \
-            self.data, sample_type, method, min_bin, max_bin, Nbins, Nbootstraps, Ngals, w_theta_method)
+            self.data, method, min_bin, max_bin, Nbins, Nbootstraps, Ngals, w_theta_method)
     
     def calc_w_theta_CCF(self, sample_type, cross_data, method = "landy-szalay", min_bin = 1e-3,\
                     max_bin = 2e-1, Nbins = 20, Nbootstraps = 100, Ngals = None):
         
         self.w_theta_CCF = two_pt_angular_cross_corr.calc_two_pt_angular_corr(self.fieldname, \
-                    self.data, sample_type, cross_data, method, min_bin, max_bin, \
+                    self.data, cross_data, method, min_bin, max_bin, \
                         Nbins, Nbootstraps, Ngals)
     
     def M_h_MCMC(self, fit_type, nwalkers, backend_filename, \
@@ -327,20 +331,20 @@ def plot_stellar_mass_functions():
                             "ALL", corr_type = "None")
     smf.plot_stellar_mass_functions(gal_field_array, "smf")
 
-def calculate_w_theta(z, z_width, min_stellar_mass, max_stellar_mass, Nbootstraps = 100, w_theta_method = "halotools"):
+def calculate_w_theta(z, z_width, min_stellar_mass, max_stellar_mass, Nbootstraps = 100, w_theta_method = "astroML"):
     
-    gal_field = galaxy_field("UDS", z, z_width, min_stellar_mass, max_stellar_mass)
+    gal_field = galaxy_field("Rachana UDS DR11", z, z_width, min_stellar_mass, max_stellar_mass)
     #cross_field = galaxy_field("UDS", 4, 0.6, 10, 99)
     print("Ngals = %1.0f" %gal_field.Ngals)
-    if gal_field.Ngals > 10000:
-        Ngals = 10000
-    else:
-        Ngals = gal_field.Ngals
+    # if gal_field.Ngals > 10000:
+    #     Ngals = 10000
+    # else:
+    #     Ngals = gal_field.Ngals
+    Ngals = gal_field.Ngals
     #print("Ngals cross = %1.0f" %cross_field.Ngals)
     # gal_field.galaxy_density(4.9)
     # gal_field.galaxy_abundance(4.9)
-    gal_field.calc_w_theta_ACF("STELLAR_MASS_BIN", Ngals = Ngals, Nbootstraps = Nbootstraps, \
-                               w_theta_method = w_theta_method)
+    gal_field.calc_w_theta_ACF(Ngals = Ngals, Nbootstraps = Nbootstraps, w_theta_method = w_theta_method)
     # gal_field.galaxy_density()
     # gal_field.galaxy_abundance()
     # two_pt_angular_corr.plot_two_pt_angular_corr([gal_field.w_theta_ACF])
@@ -373,12 +377,14 @@ def test_M_h_from_Foucaud_2010(z_min, z_max, n, n_err, nwalkers, nsteps, \
 def from_shell():
     z_mid = float(cf.os.environ["Z_MID"])
     z_width = float(cf.os.environ["Z_WIDTH"])
-    min_stellar_mass = float(cf.os.environ["MIN_STELLAR_MASS"])
-    max_stellar_mass = float(cf.os.environ["MAX_STELLAR_MASS"])
-    if min_stellar_mass == "":
+    if cf.os.environ["STELLAR_MASS_MIN"] == "":
         min_stellar_mass = None
-    if max_stellar_mass == "":
+    else:
+        min_stellar_mass = float(cf.os.environ["STELLAR_MASS_MIN"])
+    if cf.os.environ["STELLAR_MASS_MAX"] == "":
         max_stellar_mass = None
+    else:
+        max_stellar_mass = float(cf.os.environ["STELLAR_MASS_MAX"])
     if bool(cf.os.environ["CALCULATE_ACF"]):
         calculate_w_theta(z_mid, z_width, min_stellar_mass, max_stellar_mass)
 

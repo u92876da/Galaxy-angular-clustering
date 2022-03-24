@@ -15,15 +15,15 @@ from cosmic_var import cosmic_var
 class two_pt_angular_corr:
     
     def __init__(self, fieldname, theta_mid_bins, w_theta, w_theta_err, bootstraps, \
-                 galaxy_redshifts, galaxy_stellar_masses, sample_type, random_gals_ra_dec, delta = 0.8):
+                 galaxy_redshifts, galaxy_stellar_masses, delta = 0.8):
         
         # construct class member data
         self.fieldname = fieldname
         self.bootstraps = bootstraps
         self.galaxy_redshifts = galaxy_redshifts
         self.galaxy_stellar_masses = galaxy_stellar_masses
-        self.sample_type = sample_type
-        self.random_gals_ra_dec = random_gals_ra_dec
+        # self.sample_type = sample_type
+        # self.random_gals_ra_dec = random_gals_ra_dec
         
         # ensure entered data is not nan
         indices_to_remove = list([i for i in range(len(w_theta)) if cf.np.isnan(w_theta[i])])
@@ -53,8 +53,8 @@ class two_pt_angular_corr:
         # include cosmic variance and errors from adjacent bin scattering here
         self.A_err_cv = cf.np.sqrt(self.cosmic_var.unmasked_gal_cosmic_var \
                                    (self.photo_z["z_width"])) * self.A
-        print(self.A_err * 1e3)
-        print(self.A_err_cv * 1e3)
+        #print(self.A_err * 1e3)
+        #print(self.A_err_cv * 1e3)
         self.A_err = cf.np.sqrt(self.A_err ** 2 + self.A_err_cv ** 2)
         self.calculate_b(flat_N_z = True)
         
@@ -118,7 +118,8 @@ class two_pt_angular_corr:
     @property
     def Nrandom_pairs(self):
         cf.os.chdir("/Users/user/Documents/PGR/UDS field")
-        return cf.pd.read_csv(self.fieldname + " N random pairs.csv")
+        #return cf.pd.read_csv(self.fieldname + " N random pairs.csv")
+        return cf.pd.read_csv("UDS N random pairs.csv")
     
     @property
     def cosmic_var(self):
@@ -814,19 +815,19 @@ class two_pt_angular_corr:
 class two_pt_angular_auto_corr(two_pt_angular_corr):
     
     def __init__(self, fieldname, theta_mid_bins, w_theta, w_theta_err, bootstraps, \
-                 galaxy_redshifts, galaxy_stellar_masses, sample_type, delta = 0.8):
+                 galaxy_redshifts, galaxy_stellar_masses, delta = 0.8):
         super().__init__(fieldname, theta_mid_bins, w_theta, w_theta_err, bootstraps, \
-                     galaxy_redshifts, galaxy_stellar_masses, sample_type, delta)
+                     galaxy_redshifts, galaxy_stellar_masses, delta)
     
     @classmethod # computationally expensive alternative constructor
-    def calc_two_pt_angular_corr(cls, fieldname, data, sample_type, method = "landy-szalay", \
+    def calc_two_pt_angular_corr(cls, fieldname, data, method = "landy-szalay", \
                         min_bin = 1e-10, max_bin = 2e2, Nbins = 20, Nbootstraps = 100, Ngals = None, \
-                            w_theta_method = "halotools"):
+                            w_theta_method = "astroML"):
         
         # time this
         start_time = cf.time.time()
         
-        sample_type_enum = cf.galaxy_sample_type[sample_type]
+        # sample_type_enum = cf.galaxy_sample_type[sample_type]
         geometry = field_geometry(fieldname)
         
         # potential stumbling block in code here
@@ -844,9 +845,12 @@ class two_pt_angular_auto_corr(two_pt_angular_corr):
         
         # calculate w(theta) from data using bootstrapping to generate errors
         if w_theta_method == "astroML":
+            random_gals_filename = "/Users/user/Documents/PGR/UDS field/UDS random gals ra dec"
+            random_gals = cf.pd.read_csv(random_gals_filename + ".csv")
             results = cf.astroML.bootstrap_two_point_angular(data["ALPHA_J2000"], data["DELTA_J2000"], \
-                            theta_edge_bins, geometry, method = method, Nbootstraps = Nbootstraps)
-            w_theta, w_theta_err, bootstraps, random_gals_ra_dec = results
+                            theta_edge_bins, random_gals["ra"], random_gals["dec"], \
+                                method = method, Nbootstraps = Nbootstraps)
+            w_theta, w_theta_err, bootstraps = results
             
         elif w_theta_method == "halotools":        
             
@@ -973,36 +977,37 @@ class two_pt_angular_auto_corr(two_pt_angular_corr):
             raise SystemError("Invalid 'w_theta_method' input!")
             
         # plot the field containing data and random galaxies
-        geometry.plot_field({"ra": data["ALPHA_J2000"], "dec": data["DELTA_J2000"]}, random_gals_ra_dec)
+        # geometry.plot_field({"ra": data["ALPHA_J2000"], "dec": data["DELTA_J2000"]}, random_gals_ra_dec)
         
         end_time = cf.time.time()
         print("This took {} seconds!".format(cf.np.round(end_time - start_time, 2)))
         
-        # calculate mid-photo-z and mid-stellar mass for naming
-        min_z = cf.np.min(data["z_p"])
-        max_z = cf.np.max(data["z_p"])
-        mid_z = (max_z - min_z) / 2 + min_z
-        min_stellar_mass = cf.np.log10(cf.np.min(data["Mstar_z_p"]))
-        max_stellar_mass = cf.np.log10(cf.np.max(data["Mstar_z_p"]))
+        if cf.os.environ["STELLAR_MASS_MIN"] == "":
+            min_stellar_mass = None
+        else:
+            min_stellar_mass = float(cf.os.environ["STELLAR_MASS_MIN"])
+        if cf.os.environ["STELLAR_MASS_MAX"] == "":
+            max_stellar_mass = None
+        else:
+            max_stellar_mass = float(cf.os.environ["STELLAR_MASS_MAX"])
         
         # save data as pickle
         #cf.os.chdir("/Users/user/Documents/PGR/UDS field/pkl")
         # include sample type here
-        if sample_type_enum.name == "ALL":
-            save_name = "z = %1.0f, ALL Mstar %s w(theta) ACF" \
-                      % (mid_z, fieldname)
-        elif sample_type_enum.name == "LOWER_STELLAR_MASS_LIM":
-            save_name = "z = %1.0f, log(Mstar) > %1.1f, %s w(theta) ACF" \
-                      % (mid_z, min_stellar_mass, fieldname)
-        elif sample_type_enum.name == "STELLAR_MASS_BIN":
-            save_name = "z = %1.0f, %1.1f < log(Mstar) < %1.1f, %s w(theta) ACF, " \
-                % (mid_z, min_stellar_mass, max_stellar_mass, fieldname) + w_theta_method
+        if min_stellar_mass == None and max_stellar_mass == None:
+            save_name = "All gals"
+        elif min_stellar_mass != None and max_stellar_mass == None:
+            save_name = "log(Mstar) > %1.1f" % (min_stellar_mass)
+        elif min_stellar_mass == None and max_stellar_mass != None:
+            save_name = "log(Mstar) < %1.1f" % (max_stellar_mass)
+        elif min_stellar_mass != None and max_stellar_mass != None:
+            save_name = "%1.1f < log(Mstar) < %1.1f" \
+                % (min_stellar_mass, max_stellar_mass)
                       
-        with open(save_name + ".pkl", 'wb') as f:
+        with open(save_name + ".pkl", "wb") as f:
             cf.pickle.dump([fieldname, theta, w_theta, w_theta_err, bootstraps, \
-                            data["z_p"], data["Mstar_z_p"], sample_type_enum, random_gals_ra_dec], f)
-        return cls(fieldname, theta, w_theta, w_theta_err, bootstraps, data["z_p"], \
-                   data["Mstar_z_p"], sample_type_enum, random_gals_ra_dec)     
+                            data["z_p"], data["Mstar_z_p"]], f)
+        return cls(fieldname, theta, w_theta, w_theta_err, bootstraps, data["z_p"], data["Mstar_z_p"])
     
     
 class two_pt_angular_cross_corr(two_pt_angular_corr):
@@ -1059,15 +1064,17 @@ class two_pt_angular_cross_corr(two_pt_angular_corr):
         end_time = cf.time.time()
         print("This took {} seconds!".format(cf.np.round(end_time - start_time, 2)))
         
-        # calculate mid-photo-z and mid-stellar mass for naming
-        min_z = cf.np.min(data["z_p"])
-        max_z = cf.np.max(data["z_p"])
-        mid_z = (max_z - min_z) / 2 + min_z
-        min_stellar_mass = cf.np.log10(cf.np.min(data["Mstar_z_p"]))
-        max_stellar_mass = cf.np.log10(cf.np.max(data["Mstar_z_p"]))
+        if cf.os.environ["STELLAR_MASS_MIN"] == "":
+            min_stellar_mass = None
+        else:
+            min_stellar_mass = float(cf.os.environ["STELLAR_MASS_MIN"])
+        if cf.os.environ["STELLAR_MASS_MAX"] == "":
+            max_stellar_mass = None
+        else:
+            max_stellar_mass = float(cf.os.environ["STELLAR_MASS_MAX"])
         
         # save data as pickle
-        cf.os.chdir("/Users/user/Documents/PGR/UDS field/pkl")
+        # cf.os.chdir("/Users/user/Documents/PGR/UDS field/pkl")
         # include sample type here
         if sample_type_enum.name == "ALL":
             save_name = "z = %1.0f, ALL Mstar %s w(theta) ACF" \

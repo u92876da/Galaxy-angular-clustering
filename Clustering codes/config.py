@@ -55,7 +55,7 @@ from colossus.cosmology import cosmology
 astropy_cosmo = FlatLambdaCDM(H0 = 70, Om0 = 0.3, Ob0 = 0.05, Tcmb0=2.725) # set astropy cosmology
 cosmo = cosmology.setCosmology("cosmo", dict(H0 = 70, Om0 = 0.3, Ob0 = 0.05, sigma8 = 0.9, ns = 1.0)) # set colossus cosmology
 # define global variables
-#filenames = {"UDS": "/Users/user/Documents/PGR/UDS field/DR11-2arcsec-Jun-30-2019.fits"}
+filenames = {"Rachana UDS DR11": "/Users/user/Documents/PGR/UDS field/DR11-2arcsec-Jun-30-2019.fits"}
 UDS_mask_filename = "DR11.multiband-mask.final.binary-best.fits"
 masks = {"UDS": "/Users/user/Documents/PGR/UDS field/" + UDS_mask_filename}
 
