@@ -44,8 +44,8 @@ from matplotlib.lines import Line2D
 from dataclasses import dataclass
 from enum import Enum
 import sklearn.utils
-import halotools
-from halotools.mock_observables import angular_tpcf
+#import halotools
+#from halotools.mock_observables import angular_tpcf
 mpl.colors.Normalize(vmin=0, vmax=1)
 plasma = cm.get_cmap("plasma")
 tab10 = cm.get_cmap("tab10")

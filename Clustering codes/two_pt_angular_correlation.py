@@ -845,8 +845,8 @@ class two_pt_angular_auto_corr(two_pt_angular_corr):
         
         # calculate w(theta) from data using bootstrapping to generate errors
         if w_theta_method == "astroML":
-            random_gals_filename = "/Users/user/Documents/PGR/UDS field/UDS random gals ra dec"
-            random_gals = cf.pd.read_csv(random_gals_filename + ".csv")
+            random_gals_filename = cf.os.environ["RANDOM_GALS_FILE"] #"/Users/user/Documents/PGR/UDS field/UDS random gals ra dec"
+            random_gals = cf.pd.read_csv(random_gals_filename)
             results = cf.astroML.bootstrap_two_point_angular(data["ALPHA_J2000"], data["DELTA_J2000"], \
                             theta_edge_bins, random_gals["ra"], random_gals["dec"], \
                                 method = method, Nbootstraps = Nbootstraps)

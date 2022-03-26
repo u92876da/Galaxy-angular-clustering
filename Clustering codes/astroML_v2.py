@@ -346,7 +346,7 @@ def bootstrap_two_point_angular(ra, dec, bins, ra_rand = [], dec_rand = [], geom
 
     for i in range(Nbootstraps):
         # time this
-        # start_time_repeat = time.time() 
+        start_time_repeat = time.time() 
         
         # draw a random sample with N points if galaxy positions not already given
         if len(ra_rand) < 1000 * Nbootstraps and len(dec_rand) < 1000 * Nbootstraps:
@@ -378,8 +378,8 @@ def bootstrap_two_point_angular(ra, dec, bins, ra_rand = [], dec_rand = [], geom
         bootstraps.append(two_point(data_b, bins_transform, method = method,
                                     data_R = data_R, random_state=rng))
         
-        # end_time_repeat = time.time()
-        # print("Bootstrap {} took {} seconds!".format(i+1, np.round(end_time_repeat - start_time_repeat, 2)))
+        end_time_repeat = time.time()
+        print("Bootstrap {} took {} seconds!".format(i+1, np.round(end_time_repeat - start_time_repeat, 2)))
      
     print("Nrandom =", len(ra_R))
 

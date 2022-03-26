@@ -27,7 +27,11 @@ class galaxy_field:
         
         self.fieldname = fieldname
         #self.HDU_list = cf.fits.open(datafile) # CANNOT PICKLE THIS
-        data = cf.fits.open(cf.filenames[fieldname])[1].data
+        if cf.os.getenv("FILENAME", False):
+            data = cf.fits.open(cf.os.environ["FILENAME"])
+            data = cf.fits.open(cf.os.environ("FIELDNAME"))[1].data
+        else:
+            data = cf.fits.open(cf.filenames[fieldname])[1].data
         #data = cf.rewrite_matched_table_columns(data)
         data["Mstar_z_p"] = data["Mstar_m62_z_p"] # solar metallicity Z = 0.02
         data = data[data["Best galaxies"] == True]
