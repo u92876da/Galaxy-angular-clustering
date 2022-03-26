@@ -111,14 +111,14 @@ def main(cat_1_filename, cat_2_filename = None, z_1 = "z_spec", z_2 = "z_p"):
     photo_z_err_obj.plot_delta_z_over_1_plus_z_spec()
 
 if __name__ == "__main__":
-    filename = "UDS_def_test_EM_lines_ZP_corrected_small"
-    cf.os.chdir("/Users/user/Documents/PGR/LePhare/output_cat/" + filename)
+    filename = "COSMOS_DEF_BEST_EBV_MAX_1_5_K18_25_IJ_NO_EM"
+    cf.os.chdir("/Users/user/Documents/PGR/LePhare/output_cat/ZP_testing/" + filename)
     cat_1_filename = filename + ".fits"
     
     # Rachanas_UDS_DR11 = "/Users/user/Documents/PGR/UDS field/DR11-2arcsec-Jun-30-2019.fits"
     # cat_1_filename = Rachanas_UDS_DR11
     # cat_2_filename = ""
-    z_1 = "zSPEC"
-    z_2 = "z_BEST"
+    z_1 = "ZSPEC"
+    z_2 = "Z_BEST"
     main(cat_1_filename, z_1 = z_1, z_2 = z_2)
         

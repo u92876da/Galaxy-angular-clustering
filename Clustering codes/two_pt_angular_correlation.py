@@ -1139,9 +1139,9 @@ def main():
     #two_pt_angular_corr.plot_two_pt_angular_corr(w_theta_obj_array, "A")
     
 if __name__ == "__main__":
-    z_mid = int(cf.os.environ["Z_MID"])
-    print(z_mid)
-    #two_pt_angular_corr.create_random_gals(field_geometry("UDS"), Ngals, save_gals = True)
+    Ngals = int(cf.os.environ["NGALS"])
+    # print(z_mid)
+    two_pt_angular_corr.create_random_gals(field_geometry("UDS"), Ngals, save_gals = True)
     #main()
     #test_literature_paper(0.9, 1.3, 70.55e-3, 15.07e-3, delta = 0.6, method = "Adel05")
     #print((5.7 * cf.u.Mpc).to(cf.u.Mpc / cf.u.littleh, cf.u.with_H0(cf.cosmo.H0 * cf.u.km / (cf.u.s * cf.u.Mpc))))

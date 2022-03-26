@@ -62,10 +62,15 @@ class field_geometry:
     @property
     def mask(self):
         mask_dir = cf.os.environ["MASK_DIR"]
+        orig_dir = cf.os.getcwd()
+        cf.os.chdir(mask_dir)
         if mask_dir == "local":
-            return cf.fits.open(cf.masks[self.fieldname])[0].data
+            mask = cf.fits.open(cf.masks[self.fieldname])[0].data
         else:
-            return cf.fits.open(mask_dir + "/" + cf.UDS_mask_filename)[0].data
+            mask = cf.fits.open(cf.UDS_mask_filename)[0].data
+        cf.os.chdir(orig_dir)
+        return mask
+            
     
     @property
     def mask_pixel_scaling(self):
